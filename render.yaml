@@ -1,0 +1,56 @@
+# Blueprint para Render — un solo servicio, 100% dentro del plan Free.
+#
+# La re-suspensión periódica (necesaria para exigir verificación en cada
+# inicio de sesión) NO se hace con un Cron Job nativo de Render, porque ese
+# tipo de servicio siempre tiene costo (mínimo ~$1/mes, "free" no es un plan
+# válido para type: cron). En su lugar, se expone el endpoint protegido
+# /cron-resuspend.php y se dispara gratis desde GitHub Actions
+# (.github/workflows/resuspend.yml) o desde cron-job.org.
+#
+# Si en el futuro prefieres pagar por un Cron Job nativo de Render en vez de
+# depender de un pinger externo, consulta el bloque comentado al final de
+# este archivo y la sección "Opción B" del README.
+
+services:
+  - type: web
+    name: didit-moodle-portal
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: DIDIT_API_KEY
+        sync: false
+      - key: DIDIT_WORKFLOW_ID
+        sync: false
+      - key: DIDIT_WEBHOOK_SECRET
+        sync: false
+      - key: DIDIT_API_BASE_URL
+        value: https://verification.didit.me/v3
+      - key: MOODLE_BASE_URL
+        sync: false
+      - key: MOODLE_WS_TOKEN
+        sync: false
+      - key: PUBLIC_BASE_URL
+        sync: false
+      - key: SESSION_WINDOW_MINUTES
+        value: "15"
+      - key: CRON_SECRET
+        generateValue: true   # Render genera un valor aleatorio seguro solo;
+                               # cópialo luego a tu pinger externo (paso 4 del README).
+
+# --- Opcional (de pago): Cron Job nativo de Render -------------------------
+# Descomenta este bloque SOLO si prefieres pagar ~$1+/mes en vez de usar un
+# pinger externo gratuito. No es necesario para que la app funcione.
+#
+#  - type: cron
+#    name: didit-resuspend
+#    env: docker
+#    plan: starter
+#    dockerfilePath: ./Dockerfile
+#    dockerCommand: php /var/www/cli/resuspend.php
+#    schedule: "*/5 * * * *"
+#    envVars:
+#      - key: MOODLE_BASE_URL
+#        sync: false
+#      - key: MOODLE_WS_TOKEN
+#        sync: false
